@@ -1,4 +1,33 @@
+
+
+buildscript {
+    repositories {
+        maven {
+            credentials {
+                username artifactory_user
+                password artifactory_password
+            }
+            url maven_contextUrl
+        }
+
+    }
+
+}
+
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.application) apply false
+}
+
+allprojects {
+    repositories {
+        maven {
+            credentials {
+                username artifactory_user
+                password artifactory_password
+            }
+            url maven_contextUrl
+        }
+
+    }
 }
