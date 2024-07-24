@@ -1,30 +1,34 @@
 package com.motorolasolutions.msismartreply;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.AdvertiseCallback;
-import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.AdvertiseSettings;
-import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
-import android.os.ParcelUuid;
 import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.util.UUID;
+import java.net.InetAddress;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements TheListener {
     private static final String TAG = "MainActivity";
-    private BluetoothLeAdvertiser advertiser;
-    private AdvertiseCallback advertiseCallback;
+    private static final int PERMISSIONS_REQUEST_CODE = 123; // Arbitrary request code
+    private static final String[] REQUIRED_PERMISSIONS =
+            new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.NEARBY_WIFI_DEVICES,};
+    private final IntentFilter intentFilter = new IntentFilter();
+    WifiP2pManager.Channel channel;
+    WifiP2pManager manager;
+    WiFiDirectBroadcastReceiver receiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,44 +41,127 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
-        advertiser = bluetoothAdapter.getBluetoothLeAdvertiser();
-
-        AdvertiseSettings settings = new AdvertiseSettings.Builder()
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-                .setConnectable(true)
-                .build();
-
-        AdvertiseData data = new AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
-                .addServiceUuid(new ParcelUuid(UUID.randomUUID())) // replace with your UUID
-                .build();
-
-        advertiseCallback = new AdvertiseCallback() {
-            @Override
-            public void onStartSuccess(AdvertiseSettings settingsInEffect) {
-                Log.i(TAG, "LE Advertise Started.");
-            }
-
-            @Override
-            public void onStartFailure(int errorCode) {
-                Log.w(TAG, "LE Advertise Failed: " + errorCode);
-            }
-        };
-
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            Log.w(TAG, "onCreate: missing permission");
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
+        if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, PERMISSIONS_REQUEST_CODE);
         }
-        advertiser.startAdvertising(settings, data, advertiseCallback);
+
+        // Indicates a change in the Wi-Fi Direct status.
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
+
+        // Indicates a change in the list of available peers.
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+
+        // Indicates the state of Wi-Fi Direct connectivity has changed.
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
+
+        // Indicates this device's details have changed.
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+
+        manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+        channel = manager.initialize(this, getMainLooper(), null);
+    }
+
+    private boolean hasPermissions(Context context, String... permissions) {
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onResume() {
+        super.onResume();
+        receiver = new WiFiDirectBroadcastReceiver(manager, channel, this);
+        registerReceiver(receiver, intentFilter);
+        manager.discoverPeers(channel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                Log.i(TAG, "discoverPeers onSuccess:");
+            }
+
+            @Override
+            public void onFailure(int reasonCode) {
+                Log.d(TAG, "discoverPeers  onFailure");
+            }
+        });
+    }
+
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        unregisterReceiver(receiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        manager.stopListening(channel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "onSuccess: stop listening");
+            }
+
+            @Override
+            public void onFailure(int reason) {
+                Log.d(TAG, "onFailure: stop listening " + reason);
+            }
+        });
+
+        manager.removeGroup(channel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, " removeGroup onSuccess: ");
+            }
+
+            @Override
+            public void onFailure(int reason) {
+                Log.d(TAG, " removeGroup onFailure: "+reason);
+            }
+        });
+    }
+
+
+    @Override
+    public void onClientConnected(InetAddress hostAddress) {
+
+    }
+
+    @Override
+    public void onOwnerConnected() {
+
+    }
+
+    @Override
+    public void onConnectionEstablished() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        });
+    }
+
+    @Override
+    public void onConnectionLost() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        });
+    }
+
+    @Override
+    public void onMessageReceived(String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        });
     }
 }
