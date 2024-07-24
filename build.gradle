@@ -28,8 +28,11 @@ allprojects {
         google()
         mavenCentral()
         maven {
-            name 'ossrh-snapshot'
-            url 'https://oss.sonatype.org/content/repositories/snapshots'
+            credentials {
+                username artifactory_user
+                password artifactory_password
+            }
+            url maven_contextUrl
             }
     }
 }
