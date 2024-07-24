@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity implements TheListener {
     WifiP2pManager manager;
     WiFiDirectBroadcastReceiver receiver;
 
+    private ArrayList<MessageModel> messages;
     private RecyclerView messageRecyclerView;
     private MessageRecyclerAdapter messageRecyclerAdapter;
 
@@ -67,11 +68,8 @@ public class MainActivity extends AppCompatActivity implements TheListener {
 
         //RecyclerView for messages in chat
         messageRecyclerView = findViewById(R.id.messageRecyclerView);
-        ArrayList<String> messages = new ArrayList<String>();
-        messages.add("Hello");
-        messages.add("Hi");
-        messages.add("How are you?");
-        messages.add("I'm good, how are you?");
+        messages = new ArrayList<MessageModel>();
+
         messageRecyclerAdapter = new MessageRecyclerAdapter(messages);
         messageRecyclerView.setAdapter(messageRecyclerAdapter);
     }

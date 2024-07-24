@@ -5,5 +5,5 @@
         android:radius="20dp"
         />
     <solid
-        android:color="#CCCFD1"/>
+        android:color="@color/msi_ui_mhx"/>
 </shape>
