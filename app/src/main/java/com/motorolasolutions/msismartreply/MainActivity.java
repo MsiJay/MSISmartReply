@@ -7,7 +7,12 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,6 +23,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements TheListener {
     private static final String TAG = "MainActivity";
@@ -30,6 +36,12 @@ public class MainActivity extends AppCompatActivity implements TheListener {
     WifiP2pManager manager;
     WiFiDirectBroadcastReceiver receiver;
 
+    private EditText messageInput;
+    private ImageView sendMessage;
+
+    private SmartReplyClient client;
+    private Handler handler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,6 +52,14 @@ public class MainActivity extends AppCompatActivity implements TheListener {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        client = new SmartReplyClient(getApplicationContext());
+        handler = new Handler(Looper.getMainLooper());
+
+        messageInput = findViewById(R.id.inputBar);
+        sendMessage = findViewById(R.id.btn_send);
+
+        sendMessage.setOnClickListener((View v) -> send(messageInput.getText().toString()));
 
         if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, PERMISSIONS_REQUEST_CODE);
@@ -163,5 +183,39 @@ public class MainActivity extends AppCompatActivity implements TheListener {
 
             }
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.v(TAG, "onStart");
+        handler.post(
+                () -> {
+                    client.loadModel();
+                });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.v(TAG, "onStop");
+        handler.post(
+                () -> {
+                    client.unloadModel();
+                });
+    }
+
+    private void send(final String message) {
+        Log.d(TAG, "send: ");
+        handler.post(
+                () -> {
+                    SmartReply[] response = client.predict(new String[] {message});
+                    Log.d(TAG, "send: size " + response.length);
+                    ArrayList<String> replies = new ArrayList<String>();
+                    for (SmartReply reply : response) {
+                        replies.add(reply.getText());
+                        Log.d(TAG, "send: reply is " + reply);
+                    }
+                });
     }
 }

@@ -18,6 +18,7 @@ pluginManagement {
         mavenCentral()
     }
 }*/
+//enableFeaturePreview("VERSION_CATALOGS")
 
 rootProject.name = "MSISmartReply"
 include ':app'
