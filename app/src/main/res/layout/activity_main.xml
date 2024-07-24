@@ -12,16 +12,9 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/msi_ui_accent_blue_01">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Smart Response"
-            android:textColor="@color/msi_ui_primary_light"
-            android:textSize="35sp" />
-
-    </androidx.appcompat.widget.Toolbar>
+        android:background="@color/msi_ui_accent_blue_01"
+        app:title="Smart Reply"
+        app:titleTextColor="@color/msi_ui_primary_light"/>
 
     <!-- Recycler view attributes are likely not setup properly -->
 
@@ -29,6 +22,7 @@
         android:id="@+id/messageRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginBottom="20dp"
         android:layout_above="@id/inputBar"
         android:layout_below="@id/toolbar"
         android:orientation="vertical"
