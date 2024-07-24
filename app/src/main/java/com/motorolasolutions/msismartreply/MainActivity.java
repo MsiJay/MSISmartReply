@@ -16,8 +16,10 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements TheListener {
     private static final String TAG = "MainActivity";
@@ -29,6 +31,9 @@ public class MainActivity extends AppCompatActivity implements TheListener {
     WifiP2pManager.Channel channel;
     WifiP2pManager manager;
     WiFiDirectBroadcastReceiver receiver;
+
+    private RecyclerView messageRecyclerView;
+    private MessageRecyclerAdapter messageRecyclerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +64,16 @@ public class MainActivity extends AppCompatActivity implements TheListener {
 
         manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(this, getMainLooper(), null);
+
+        //RecyclerView for messages in chat
+        messageRecyclerView = findViewById(R.id.messageRecyclerView);
+        ArrayList<String> messages = new ArrayList<String>();
+        messages.add("Hello");
+        messages.add("Hi");
+        messages.add("How are you?");
+        messages.add("I'm good, how are you?");
+        messageRecyclerAdapter = new MessageRecyclerAdapter(messages);
+        messageRecyclerView.setAdapter(messageRecyclerAdapter);
     }
 
     private boolean hasPermissions(Context context, String... permissions) {
