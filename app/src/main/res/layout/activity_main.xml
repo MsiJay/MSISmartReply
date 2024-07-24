@@ -26,10 +26,17 @@
     <!-- Recycler view attributes are likely not setup properly -->
 
     <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/messageRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_above="@id/inputBar"
         android:layout_below="@id/toolbar"
-        android:layout_above="@id/inputBar"/>
+        android:orientation="vertical"
+        android:overScrollMode="always"
+        android:visibility="visible"
+        app:reverseLayout="false"
+        app:stackFromEnd="true"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
 
     <FrameLayout
         android:id="@+id/sendButtonBackground"
